@@ -1,672 +1,350 @@
 <!DOCTYPE html>
-
 <html lang="ko">
-
 <head>
-
     <meta charset="UTF-8">
-
+    <!-- 모바일에서 적정 크기로 보이게 하고, 사용자의 임의 확대를 방지하는 메타 태그 추가 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ARCH Character Clicker - Final Version</title>
-
     <style>
-
         :root {
-
             --bg-color: #ffffff;
-
             --main-text: #2d3436;
-
             --light-gray: #f5f6fa;
-
             --sidebar-width: 320px;
-
             --theme-color: #0984e3; 
-
         }
 
-
-
-        body { margin: 0; background: var(--bg-color); color: var(--main-text); font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; overflow: hidden; transition: background-color 0.3s; position: relative; }
-
+        /* touch-action: manipulation을 추가하여 더블탭 확대 현상을 방지합니다. */
+        body { 
+            margin: 0; 
+            background: var(--bg-color); 
+            color: var(--main-text); 
+            font-family: 'Pretendard', sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            transition: background-color 0.3s; 
+            position: relative; 
+            touch-action: manipulation; 
+        }
+        
         header { position: fixed; top: 0; left: 0; right: 0; height: 60px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); z-index: 100; }
-
         #menu-toggle { background: none; border: none; font-size: 30px; cursor: pointer; color: var(--main-text); }
-
         main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px; position: relative; z-index: 10; }
-
         
-
         .badge-container { display: flex; gap: 10px; margin-bottom: 10px; }
-
         .level-badge, .attr-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; transition: all 0.3s ease; }
-
         .level-badge { background: var(--theme-color); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-
         .attr-badge { background: white; color: var(--theme-color); border: 2px solid var(--theme-color); }
-
         
-
         .name-tag { font-size: 1.6rem; font-weight: 800; margin-bottom: 20px; }
-
         
-
         #char-display { width: 300px; height: 300px; border-radius: 40px; object-fit: cover; background: var(--light-gray); cursor: pointer; transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); user-select: none; -webkit-user-drag: none; border: 3px solid transparent; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-
         #char-display:hover { border-color: var(--theme-color); box-shadow: 0 0 30px var(--theme-color); transform: translateY(-5px); }
-
         #char-display:active { transform: scale(0.92); filter: brightness(1.1); }
-
         
-
-        .gauge-outer { width: 350px; height: 14px; background: #eee; border-radius: 7px; overflow: hidden; margin: 30px 0 10px; }
-
+        /* 게이지가 모바일 화면 밖으로 나가지 않도록 최대 너비 조절 */
+        .gauge-outer { width: 350px; max-width: 90vw; height: 14px; background: #eee; border-radius: 7px; overflow: hidden; margin: 30px 0 10px; }
         #gauge-inner { width: 0%; height: 100%; background: var(--theme-color); transition: width 0.1s ease-out, background-color 0.3s ease; }
-
         .info-text { font-size: 1.1rem; font-weight: bold; color: #636e72; }
 
-
-
         #sidebar { 
-
             position: fixed; top: 0; right: -320px; width: var(--sidebar-width); height: 100vh; 
-
             background: #ffffff; box-shadow: -5px 0 25px rgba(0,0,0,0.05); transition: 0.3s ease-in-out; 
-
             z-index: 200; padding: 20px; box-sizing: border-box; 
-
             display: flex; flex-direction: column; 
-
         }
-
         #sidebar.open { right: 0; }
-
         #character-list { flex: 1; overflow-y: auto; margin-bottom: 20px; padding-right: 5px; }
-
         
-
         .sound-setting-area { border-top: 2px solid #eee; padding-top: 15px; margin-bottom: 15px; }
-
         .sound-title { font-size: 0.9rem; font-weight: bold; color: #888; margin-bottom: 10px; display: block; }
-
         .sound-btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-
         .sound-btn { padding: 8px 5px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.2s; }
-
         .sound-btn.active { background: var(--main-text); color: #fff; border-color: var(--main-text); }
 
-
-
         .reset-area { border-top: 2px solid #eee; padding-top: 15px; }
-
         .reset-btn { width: 100%; padding: 10px; background: #ff7675; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
-
         .reset-btn:hover { background: #d63031; }
 
-
-
         .group-name { font-weight: bold; color: #888; margin: 25px 0 10px; font-size: 0.9rem; border-bottom: 1px solid #eee; padding-bottom: 5px;}
-
         .char-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-
         .char-icon { cursor: pointer; text-align: center; }
-
         .char-icon img { width: 100%; aspect-ratio: 1/1; border-radius: 12px; background: var(--light-gray); border: 2px solid transparent; transition: 0.2s; object-fit: cover; }
-
         .char-icon:hover img { border-color: var(--theme-color); transform: scale(1.05); }
-
         .char-label { font-size: 0.7rem; margin-top: 5px; color: #555; font-weight: bold; }
 
-
-
         /* 진화 이펙트 */
-
         #evolution-effect {
-
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999;
-
             display: flex; justify-content: center; align-items: center;
-
             opacity: 0; transition: opacity 0.3s;
-
             background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
-
         }
-
         .evo-text {
-
             font-size: 4rem; font-weight: 900; color: #f1c40f; letter-spacing: 5px;
-
             text-shadow: 0 0 20px #f39c12, 0 0 40px #e67e22, 3px 3px 0px #fff;
-
             transform: scale(0.5); opacity: 0; font-style: italic;
-
         }
-
         @keyframes evoAnim {
-
             0% { transform: scale(0.5) translateY(50px); opacity: 0; }
-
             20% { transform: scale(1.2) translateY(0); opacity: 1; }
-
             80% { transform: scale(1) translateY(0); opacity: 1; }
-
             100% { transform: scale(1.5) translateY(-50px); opacity: 0; }
-
         }
-
         @keyframes charEvoGlow {
-
             0% { filter: brightness(1) drop-shadow(0 0 0px gold); transform: scale(1); }
-
             50% { filter: brightness(1.3) drop-shadow(0 0 50px gold); transform: scale(1.05); }
-
             100% { filter: brightness(1) drop-shadow(0 0 0px gold); transform: scale(1); }
-
         }
-
         .evo-active { opacity: 1 !important; }
-
         .evo-active .evo-text { animation: evoAnim 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
         .char-evolving { animation: charEvoGlow 2.5s ease-in-out; }
 
-
-
         .creator-tag { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); color: #bdc3c7; font-size: 0.85rem; font-weight: 500; letter-spacing: 1px; pointer-events: none; }
-    html, body {
-        touch-action: manipulation;
-        overscroll-behavior: none;
-    }
-
-    body {
-        -webkit-text-size-adjust: 100%;
-    }
-
-    img {
-        touch-action: manipulation;
-    }
     </style>
-
 </head>
-
 <body>
 
-
-
     <div id="evolution-effect">
-
         <div class="evo-text">EVOLUTION!</div>
-
     </div>
 
-
-
     <header>
-
         <h2 style="font-size: 1.1rem; letter-spacing: 1px;">ARCH 캐릭터 클리커</h2>
-
         <button id="menu-toggle">☰</button>
-
     </header>
 
-
-
     <main>
-
         <div class="badge-container">
-
             <div class="attr-badge" id="attr-display">무속성</div>
-
             <div class="level-badge" id="lv-display">LV. 1</div>
-
         </div>
-
         <div class="name-tag" id="target-name">캐릭터를 선택하세요</div>
-
         <img id="char-display" src="https://via.placeholder.com/300?text=Select+Character" alt="Character">
-
         <div class="gauge-outer">
-
             <div id="gauge-inner"></div>
-
         </div>
-
         <div class="info-text">EXP: <span id="exp-text">0</span> / <span id="max-exp-text">100</span></div>
-
     </main>
-
-
 
     <div class="creator-tag">@huchu0101</div>
 
-
-
     <aside id="sidebar">
-
         <div style="display:flex; justify-content:space-between; align-items:center;">
-
             <h3>캐릭터 리스트</h3>
-
             <button onclick="toggleSidebar()" style="background:none; border:none; cursor:pointer; font-size:20px;">✕</button>
-
         </div>
-
         
-
         <div id="character-list"></div>
 
-
-
         <div class="sound-setting-area">
-
             <span class="sound-title">🎵 클릭 소리 선택</span>
-
             <div class="sound-btn-grid">
-
                 <button class="sound-btn" onclick="changeSound('blue', this)">청축</button>
-
                 <button class="sound-btn" onclick="changeSound('red', this)">적축</button>
-
                 <button class="sound-btn" onclick="changeSound('brown', this)">갈축</button>
-
                 <button class="sound-btn" onclick="changeSound('silver', this)">은축</button>
-
                 <button class="sound-btn" onclick="changeSound('mint', this)">민트축</button>
-
                 <button class="sound-btn" onclick="changeSound('slap', this)">뺨때리는 소리</button>
-
                 <button class="sound-btn" onclick="changeSound('hit', this)">타격음</button>
-
             </div>
-
         </div>
-
-
 
         <div class="reset-area">
-
             <button class="reset-btn" onclick="resetLevel()">🔄 현재 캐릭터 레벨 초기화</button>
-
         </div>
-
     </aside>
 
-
-
     <script>
-
         const soundMap = {
-
             'blue': 'blue.mp3', 'red': 'red.mp3', 'brown': 'brown.mp3', 
-
             'silver': 'silver.mp3', 'mint': 'mint.mp3', 'slap': 'slap.mp3', 'hit': 'hit.mp3'
-
         };
-
-
 
         const attrColors = {
-
             "바람": "#41f2cf", "불": "#e74c3c", "물": "#3498db", "풀": "#2ecc71",
-
             "번개": "#f39c12", "얼음": "#baefff", "무속성": "#b2bec3" 
-
         };
-
-
-
-        // 데이터 설정 (모든 캐릭터의 이미지 칸 추가 및 에러 완전 수정)
 
         const charData = {
-
             "ARCH-PRIMA": [
-
                 { name: "해일", attr: "물", img: "hail.png", evolve: { 50: "hail_lv50.png", 100: "hail_lv100.png" } },
-
                 { name: "이카로스", attr: "바람", img: "icarus.png", evolve: { 50: "icarus_lv50.png", 100: "icarus_lv100.png" } },
-
                 { name: "산타", attr: "얼음", img: "santa.png", evolve: { 50: "santa_lv50.png", 100: "santa_lv100.png" } },
-
                 { name: "헬리오스", attr: "불", img: "helios.png", evolve: { 50: "helios_lv50.png", 100: "helios_lv100.png" } }
-
             ],
-
             "VANGUARD 1팀": [
-
                 { name: "애쉬", attr: "불", img: "ash.png", evolve: { 50: "ash_lv50.png", 100: "ash_lv100.png" } },
-
                 { name: "셰인", attr: "바람", img: "shane.png", evolve: { 50: "shane_lv50.png", 100: "shane_lv100.png" } },
-
                 { name: "오버로드", attr: "번개", img: "overlord.png", evolve: { 50: "overlord_lv50.png", 100: "overlord_lv100.png" } },
-
                 { name: "노아", attr: "물", img: "noah.png", evolve: { 50: "noah_lv50.png", 100: "noah_lv100.png" } },
-
                 { name: "아모레", attr: "풀", img: "amore.png", evolve: { 50: "amore_lv50.png", 100: "amore_lv100.png" } },
-
                 { name: "라임", attr: "얼음", img: "lime.png", evolve: { 50: "lime_lv50.png", 100: "lime_lv100.png" } }
-
             ],
-
             "VANGUARD 2팀": [
-
                 { name: "신드롬", attr: "불", img: "syndrome.png", evolve: { 50: "syndrome_lv50.png", 100: "syndrome_lv100.png" } },
-
                 { name: "리암", attr: "얼음", img: "liam.png", evolve: { 50: "liam_lv50.png", 100: "liam_lv100.png" } },
-
                 { name: "바이브", attr: "바람", img: "vibe.png", evolve: { 50: "vibe_lv50.png", 100: "vibe_lv100.png" } }
-
             ],
-
             "AGENT": [
-
                 { name: "샤드", attr: "얼음", img: "shard.png", evolve: { 50: "shard_lv50.png", 100: "shard_lv100.png" } },
-
                 { name: "카토", attr: "풀", img: "kato.png", evolve: { 50: "kato_lv50.png", 100: "kato_lv100.png" } },
-
                 { name: "루비", attr: "불", img: "ruby.png", evolve: { 50: "ruby_lv50.png", 100: "ruby_lv100.png" } }
-
             ],
-
             "ACOLYTE": [
-
                 { name: "피카", attr: "번개", img: "pika.png", evolve: { 50: "pika_lv50.png", 100: "pika_lv100.png" } },
-
                 { name: "블루", attr: "물", img: "blue.png", evolve: { 50: "blue_lv50.png", 100: "blue_lv100.png" } }
-
             ],
-
             "HARMONY DIV.": [
-
                 { name: "윈터", attr: "얼음", img: "winter.png", evolve: { 50: "winter_lv50.png", 100: "winter_lv100.png" } },
-
                 { name: "오아시스", attr: "물", img: "oasis.png", evolve: { 50: "oasis_lv50.png", 100: "oasis_lv100.png" } },
-
                 { name: "자이안", attr: "풀", img: "zian.png", evolve: { 50: "zian_lv50.png", 100: "zian_lv100.png" } },
-
                 { name: "스트레이", attr: "번개", img: "stray.png", evolve: { 50: "stray_lv50.png", 100: "stray_lv100.png" } }
-
             ],
-
             "R.S.T": [
-
                 { name: "에덴", attr: "바람", img: "eden.png", evolve: { 50: "eden_lv50.png", 100: "eden_lv100.png" } },
-
                 { name: "휴고", attr: "불", img: "hugo.png", evolve: { 50: "hugo_lv50.png", 100: "hugo_lv100.png" } },
-
                 { name: "카르마", attr: "번개", img: "karma.png", evolve: { 50: "karma_lv50.png", 100: "karma_lv100.png" } }, 
-
-              { name: "저스티스", attr: "물", img: "justice.png", evolve: { 50: "justice_lv50.png", 100: "justice_lv100.png" } }
-
+                { name: "저스티스", attr: "물", img: "justice.png", evolve: { 50: "justice_lv50.png", 100: "justice_lv100.png" } }
             ],
-
             "CORE": [
-
                 { name: "퓨어", attr: "무속성", img: "pure.png", evolve: { 50: "pure_lv50.png", 100: "pure_lv100.png" } },
-
                 { name: "밴스", attr: "풀", img: "vance.png", evolve: { 50: "vance_lv50.png", 100: "vance_lv100.png" } }
-
             ]
-
         };
 
-
-
         let currentExp = 0, currentMaxExp = 100, level = 1;
-
         let currentCharObj = null; 
-
         let selectedSound = localStorage.getItem('click_sound_type') || 'blue';
 
-
-
         const sidebar = document.getElementById('sidebar');
-
         const charList = document.getElementById('character-list');
-
         const displayImg = document.getElementById('char-display');
-
         const targetName = document.getElementById('target-name');
-
         const lvDisplay = document.getElementById('lv-display');
-
         const attrDisplay = document.getElementById('attr-display');
-
         const gauge = document.getElementById('gauge-inner');
-
         const expText = document.getElementById('exp-text');
-
         const maxExpText = document.getElementById('max-exp-text');
 
-
-
-        // 캐릭터 리스트 생성
-
         Object.keys(charData).forEach(groupName => {
-
             const wrap = document.createElement('div');
-
             wrap.innerHTML = `<div class="group-name">${groupName}</div>`;
-
             const grid = document.createElement('div');
-
             grid.className = 'char-grid';
-
             charData[groupName].forEach((char, index) => {
-
                 const item = document.createElement('div');
-
                 item.className = 'char-icon';
-
                 const imgSrc = char.img ? char.img : `https://via.placeholder.com/80?text=${char.name.substring(0,2)}`;
-
                 item.innerHTML = `<img src="${imgSrc}" onclick="loadChar('${groupName}', ${index})"><div class="char-label">${char.name}</div>`;
-
                 grid.appendChild(item);
-
             });
-
             wrap.appendChild(grid);
-
             charList.appendChild(wrap);
-
         });
-
-
 
         function changeSound(type, btnElement) {
-
             selectedSound = type;
-
             localStorage.setItem('click_sound_type', type);
-
             document.querySelectorAll('.sound-btn').forEach(btn => btn.classList.remove('active'));
-
             if(btnElement) btnElement.classList.add('active');
-
         }
-
         changeSound(selectedSound);
 
-
-
         function toggleSidebar() { sidebar.classList.toggle('open'); }
-
         document.getElementById('menu-toggle').onclick = toggleSidebar;
 
-
-
         function loadChar(groupName, index) {
-
             currentCharObj = charData[groupName][index];
-
             const themeColor = attrColors[currentCharObj.attr] || attrColors["무속성"];
-
             document.documentElement.style.setProperty('--theme-color', themeColor);
-
             targetName.innerText = currentCharObj.name;
-
             attrDisplay.innerText = currentCharObj.attr;
-
             
-
             const savedData = JSON.parse(localStorage.getItem('arch_clicker_' + currentCharObj.name)) || { level: 1, exp: 0, maxExp: 100 };
-
             level = savedData.level; currentExp = savedData.exp; currentMaxExp = savedData.maxExp;
-
             
-
             updateUI(); updateCharacterImage(); toggleSidebar();
-
         }
-
-
 
         function updateCharacterImage() {
-
             if (!currentCharObj) return;
-
             
-
             let currentImg = currentCharObj.img || `https://via.placeholder.com/300?text=${currentCharObj.name}`;
-
             
-
             if (currentCharObj.evolve) {
-
                 const evoLevels = Object.keys(currentCharObj.evolve).map(Number).sort((a, b) => b - a);
-
                 for (let evoLv of evoLevels) {
-
                     if (level >= evoLv) {
-
                         currentImg = currentCharObj.evolve[evoLv];
-
                         break; 
-
                     }
-
                 }
-
             }
-
             displayImg.src = currentImg;
-
             
-
             displayImg.onerror = function() {
-
                 this.src = `https://via.placeholder.com/300?text=${currentCharObj.name}`;
-
             };
-
         }
-
-
 
         function resetLevel() {
-
             if (!currentCharObj) { alert("먼저 캐릭터를 선택해주세요!"); return; }
-
             if (confirm(`[${currentCharObj.name}] 캐릭터의 레벨과 경험치를 정말로 초기화하겠습니까?`)) {
-
                 level = 1; currentExp = 0; currentMaxExp = 100;
-
                 localStorage.setItem('arch_clicker_' + currentCharObj.name, JSON.stringify({ level, exp: currentExp, maxExp: currentMaxExp }));
-
                 updateUI(); updateCharacterImage();
-
                 alert("초기화되었습니다.");
-
             }
-
         }
-
-
 
         function triggerEvoEffect() {
-
             const effectDiv = document.getElementById('evolution-effect');
-
             effectDiv.classList.add('evo-active');
-
             displayImg.classList.add('char-evolving');
-
             setTimeout(() => {
-
                 effectDiv.classList.remove('evo-active');
-
                 displayImg.classList.remove('char-evolving');
-
             }, 2500);
-
         }
 
-
-
-        displayImg.addEventListener('mousedown', () => {
-
+        displayImg.addEventListener('mousedown', (e) => {
+            // 모바일 터치 시 발생하는 기본 동작(확대 등) 방지
+            e.preventDefault(); 
             if(!currentCharObj) { toggleSidebar(); return; }
-
             new Audio(soundMap[selectedSound]).play().catch(()=>{});
-
             
-
             currentExp += 20; 
-
             
-
             if(currentExp >= currentMaxExp) {
-
                 level++;
-
                 currentExp -= currentMaxExp;
-
                 currentMaxExp = Math.floor(currentMaxExp * 1.2);
-
                 
-
                 updateCharacterImage();
 
-
-
                 if(level === 50 || level === 100) {
-
                     triggerEvoEffect();
-
                 }
 
-
-
                 lvDisplay.style.transform = "scale(1.3)";
-
                 setTimeout(() => lvDisplay.style.transform = "scale(1)", 200);
-
             }
-
             
-
             localStorage.setItem('arch_clicker_' + currentCharObj.name, JSON.stringify({ level, exp: currentExp, maxExp: currentMaxExp }));
-
             updateUI();
-
         });
 
-
+        // 모바일 터치 대응을 위해 touchend 이벤트에서도 동작하게 할 수 있으나, 
+        // 중복 실행을 막기 위해 mousedown만 유지하되 preventDefault로 줌만 막았습니다.
 
         function updateUI() {
-
             lvDisplay.innerText = `LV. ${level}`;
-
             expText.innerText = currentExp;
-
             maxExpText.innerText = currentMaxExp;
-
             gauge.style.width = Math.min((currentExp / currentMaxExp) * 100, 100) + "%";
-
         }
-
     </script>
-
 </body>
-
 </html>
