@@ -173,7 +173,18 @@
 
 
         .creator-tag { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); color: #bdc3c7; font-size: 0.85rem; font-weight: 500; letter-spacing: 1px; pointer-events: none; }
+    html, body {
+        touch-action: manipulation;
+        overscroll-behavior: none;
+    }
 
+    body {
+        -webkit-text-size-adjust: 100%;
+    }
+
+    img {
+        touch-action: manipulation;
+    }
     </style>
 
 </head>
